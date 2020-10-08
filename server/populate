@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+if [ "$#" -ne 1 ];
+then
+	echo "pass address[:port] of the server to populate"
+	exit 1
+fi
+set -e
+
+curl -X POST "$1/register" \
+	--data "peerid=olivier" \
+	--data "address=localhost:1723" \
+	--data "port=60022"
+curl -X POST "$1/register" \
+	--data "peerid=Stéphane" \
+	--data "address=1.2.3.4" \
+	--data "port=7891"
