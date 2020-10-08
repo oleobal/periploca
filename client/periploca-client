@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+
+import urllib.request
+import urllib.parse
+import socket
+
+import argparse
+from typing import *
+
+def register(server: str, peer_id: str, address: str, port: int) -> None:
+	
+	data = urllib.parse.urlencode({"peerid":peer_id, "address": address, "port": port}, encoding="utf-8").encode("utf-8")
+	
+	if not(server.startswith("http://") or server.startswith("https://")):
+		server = "http://"+server
+	
+	urllib.request.urlopen(server+"/register", data)
+	# if it fails we'll just raise an exception
+	
+
+def locate(server: str, peer_id: str) -> Tuple[str, int]:
+
+	if not(server.startswith("http://") or server.startswith("https://")):
+		server = "http://"+server
+	
+	peer_id = urllib.parse.quote(peer_id, encoding="utf-8")
+	with urllib.request.urlopen(server+"/locate/"+peer_id) as response:
+		resp = response.read().decode("utf-8").split("\n")
+		return (resp[0], int(resp[1]))
+
+
+
+def main()-> Optional[int]:
+	from uuid import getnode
+	default_server="localhost:8080"
+	default_peer_id=hex(getnode())[2:] # MAC address
+	default_local_address=socket.gethostbyname(socket.gethostname()) # sometimes correct
+	default_local_port=59346 # random
+	
+	parser = argparse.ArgumentParser(description='Periploca P2P chat client')
+	parser.add_argument('target_peer', type=str, 
+	    help='The person you want to chat with')
+	parser.add_argument('--server', type=str, default=default_server,
+	    help=f'Identity server to connect to (default {default_server})')
+	parser.add_argument('--peer-id', type=str, default=default_peer_id,
+	    help=f'Your peer id (default {default_peer_id})')
+	parser.add_argument('--local-address', type=str, default=default_local_address,
+	    help=f'Your address (default {default_local_address})')
+	parser.add_argument('--local-port', type=str, default=default_local_port,
+	    help=f'The port you want to use (default {default_local_port})')
+
+	args = parser.parse_args()
+	
+	print(f"Server: {args.server}, your id: {args.peer_id}, your address: {args.local_address}:{args.local_port}")
+	
+	
+	try:
+		register(args.server, args.peer_id, args.local_address, args.local_port)
+	except Exception as e:
+		print(f"Registering to server {args.server} failed:")
+		print(e)
+		return 1
+	
+	target_address=None
+	try:
+		target_address = locate(args.server, args.target_peer)
+		print(f"{args.target_peer} located to {target_address[0]}:{target_address[1]}")
+	except Exception as e:
+		print(f"Locating {args.target_peer} on {args.server} failed:")
+		print(e)
+		return 1
+	
+	# now establish a connection
+	
+	
+if __name__ == "__main__":
+	result=main()
+	if result: # This would be just one line with the walrus operator! Progress!
+		exit(result)
