@@ -1,0 +1,15 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/periploca-server
+periploca-server.so
+periploca-server.dylib
+periploca-server.dll
+periploca-server.a
+periploca-server.lib
+periploca-server-test-*
+*.exe
+*.o
+*.obj
+*.lst

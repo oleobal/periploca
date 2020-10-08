@@ -1,0 +1,12 @@
+{
+	"authors": [
+		"Olivier Léobal"
+	],
+	"copyright": "Copyright © 2020, Olivier Léobal",
+	"dependencies": {
+		"vibe-d": "~>0.9.2"
+	},
+	"description": "The Periploca server",
+	"license": "proprietary",
+	"name": "periploca-server"
+}
