@@ -3,6 +3,8 @@
 import urllib.request
 import urllib.parse
 import socket
+import asyncio
+import sys
 
 import argparse
 from typing import *
@@ -29,6 +31,56 @@ def locate(server: str, peer_id: str) -> Tuple[str, int]:
 		return (resp[0], int(resp[1]))
 
 
+def listen(port: int, my_name: str) -> None:
+	async def client_connected(reader, writer):
+		print("Client connected!")
+		writer.write(f"Hello, I am {my_name}!\n".encode())
+		
+		async def receive_messages(loop):
+			while True:
+				try:
+					data = await reader.readuntil(separator=b'\n') # I used 0x03 (ETX) at first but it's inconvenient
+				except Exception as e:
+					print("!",e)
+					break
+				message = data[:-1].decode()
+				print(">", message)
+		async def send_messages(loop):
+			pass
+				
+		
+		send_task = asyncio.create_task(send_messages(loop))
+		receive_task = asyncio.create_task(receive_messages(loop))
+	
+	loop = asyncio.get_event_loop()
+	server = loop.run_until_complete(asyncio.start_server(client_connected, port=port, loop=loop))
+	
+	print("Listening for connections..")
+	try:
+		loop.run_forever()
+	except KeyboardInterrupt:
+		print(" Closing..")
+	server.close()
+	loop.run_until_complete(server.wait_closed())
+	loop.close()
+
+	
+def connect(address: Tuple[str, int]) -> None:
+	async def send_message(message, loop):
+		reader, writer = await asyncio.open_connection(address[0], address[1], loop=loop)
+		writer.write(message.encode())
+
+		data = await reader.read(100)
+		print('Received: %r' % data.decode())
+
+		print('Close the socket')
+		writer.close()
+	
+	loop = asyncio.get_event_loop()
+	loop.run_until_complete(tcp_echo_client(message, loop))
+	loop.close()
+
+
 
 def main()-> Optional[int]:
 	from uuid import getnode
@@ -38,18 +90,28 @@ def main()-> Optional[int]:
 	default_local_port=59346 # random
 	
 	parser = argparse.ArgumentParser(description='Periploca P2P chat client')
-	parser.add_argument('target_peer', type=str, 
+	parser.add_argument('verb', type=str, choices=['listen', 'connect'],
+	    help='What to do')
+	parser.add_argument('target_peer', type=str, nargs='?',
 	    help='The person you want to chat with')
 	parser.add_argument('--server', type=str, default=default_server,
 	    help=f'Identity server to connect to (default {default_server})')
 	parser.add_argument('--peer-id', type=str, default=default_peer_id,
 	    help=f'Your peer id (default {default_peer_id})')
+	parser.add_argument('--name', type=str, default=default_peer_id,
+	    help=f'Your display name (default {default_peer_id})')
 	parser.add_argument('--local-address', type=str, default=default_local_address,
 	    help=f'Your address (default {default_local_address})')
 	parser.add_argument('--local-port', type=str, default=default_local_port,
-	    help=f'The port you want to use (default {default_local_port})')
+	    help=f'Port on which to listen and to advertise (default {default_local_port})')
 
 	args = parser.parse_args()
+	
+	# catch what argparse can't handle (it doesn't like verbs)
+	if args.verb == "connect" and (args.target_peer is None):
+		print("Specify target peer when in connect mode")
+		return 1
+	
 	
 	print(f"Server: {args.server}, your id: {args.peer_id}, your address: {args.local_address}:{args.local_port}")
 	
@@ -61,17 +123,30 @@ def main()-> Optional[int]:
 		print(e)
 		return 1
 	
-	target_address=None
-	try:
-		target_address = locate(args.server, args.target_peer)
-		print(f"{args.target_peer} located to {target_address[0]}:{target_address[1]}")
-	except Exception as e:
-		print(f"Locating {args.target_peer} on {args.server} failed:")
-		print(e)
-		return 1
 	
-	# now establish a connection
+	if args.verb == "listen":
+		try:
+			listen(args.local_port, args.name)
+		except Exception as e:
+			print("Listening for connections failed:")
+			print(e)
+			return 1
 	
+	if args.verb == "connect":
+		target_address=None
+		try:
+			target_address = locate(args.server, args.target_peer)
+			print(f"{args.target_peer} located to {target_address[0]}:{target_address[1]}")
+		except Exception as e:
+			print(f"Locating {args.target_peer} on {args.server} failed:")
+			print(e)
+			return 1
+		try:
+			connect(target_address)
+		except Exception as e:
+			print(f"Connecting to {args.target_peer} at {target_address[0]}:{target_address[1]} failed:")
+			print(e)
+			return 1
 	
 if __name__ == "__main__":
 	result=main()

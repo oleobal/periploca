@@ -13,7 +13,9 @@ Answers over HTTP for ease of debugging.
 
 ### Client
 
-(to be done)
+Written in Python 3 because people are likely to have that installed.
+
+
 
 ### Why the name
 
