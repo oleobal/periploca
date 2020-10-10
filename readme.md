@@ -15,7 +15,17 @@ Answers over HTTP for ease of debugging.
 
 Written in Python 3 because people are likely to have that installed.
 
+However, as I wanted to try out the new asyncio functions, Python 3.7 is
+required.
 
+The client has two modes, `listen` (where it waits for incoming connections)
+and `connect` (where it connects to someone listening). In a real life scenario
+you'd listen all the time in the background.
+
+Python is not strictly needed, here's me connecting to a listening peer:
+```
+$ curl server/locate/myfriend | xargs -o ncat
+```
 
 ### Why the name
 

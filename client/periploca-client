@@ -31,29 +31,31 @@ def locate(server: str, peer_id: str) -> Tuple[str, int]:
 		return (resp[0], int(resp[1]))
 
 
-def listen(port: int, my_name: str) -> None:
-	async def client_connected(reader, writer):
-		print("Client connected!")
-		writer.write(f"Hello, I am {my_name}!\n".encode())
-		
-		async def receive_messages(loop):
-			while True:
-				try:
-					data = await reader.readuntil(separator=b'\n') # I used 0x03 (ETX) at first but it's inconvenient
-				except Exception as e:
-					print("!",e)
-					break
-				message = data[:-1].decode()
-				print(">", message)
-		async def send_messages(loop):
-			pass
-				
-		
-		send_task = asyncio.create_task(send_messages(loop))
-		receive_task = asyncio.create_task(receive_messages(loop))
+async def talk_to_peer(reader, writer, my_name="anon"):
+	print("Peer connected!")
+	writer.write(f"Hello, I am {my_name}!\n".encode())
 	
+	async def receive_messages():
+		while True:
+			try:
+				data = await reader.readuntil(separator=b'\n') # I used 0x03 (ETX) at first but it's inconvenient
+			except Exception as e:
+				print("!",e)
+				break
+			message = data[:-1].decode()
+			print(">", message)
+	async def send_messages():
+		while True:
+			data = await asyncio.get_event_loop().run_in_executor(None, sys.stdin.readline)
+			if not writer.is_closing():
+				writer.write(data.encode())
+	
+	send_task = asyncio.create_task(send_messages())
+	receive_task = asyncio.create_task(receive_messages())
+
+def listen(port: int, my_name: str) -> None:
 	loop = asyncio.get_event_loop()
-	server = loop.run_until_complete(asyncio.start_server(client_connected, port=port, loop=loop))
+	server = loop.run_until_complete(asyncio.start_server(lambda x,y: talk_to_peer(x,y, my_name), port=port, loop=loop))
 	
 	print("Listening for connections..")
 	try:
@@ -65,19 +67,13 @@ def listen(port: int, my_name: str) -> None:
 	loop.close()
 
 	
-def connect(address: Tuple[str, int]) -> None:
-	async def send_message(message, loop):
+def connect(address: Tuple[str, int], my_name: str) -> None:
+	async def open_connection(address):
 		reader, writer = await asyncio.open_connection(address[0], address[1], loop=loop)
-		writer.write(message.encode())
-
-		data = await reader.read(100)
-		print('Received: %r' % data.decode())
-
-		print('Close the socket')
-		writer.close()
+		loop.run_until_complete(talk_to_peer(reader, writer, my_name))
 	
 	loop = asyncio.get_event_loop()
-	loop.run_until_complete(tcp_echo_client(message, loop))
+	loop.run_until_complete(open_connection(address))
 	loop.close()
 
 
@@ -142,7 +138,7 @@ def main()-> Optional[int]:
 			print(e)
 			return 1
 		try:
-			connect(target_address)
+			connect(target_address, args.name)
 		except Exception as e:
 			print(f"Connecting to {args.target_peer} at {target_address[0]}:{target_address[1]} failed:")
 			print(e)
