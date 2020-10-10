@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+
+docker build -t oleobal/periploca-server:$(git rev-parse --short HEAD) .
+
+if [ "$1" = "push" ]
+then
+	docker tag oleobal/periploca-server:$(git rev-parse --short HEAD) oleobal/periploca-server:latest
+	docker push oleobal/periploca-server:$(git rev-parse --short HEAD)
+	docker push oleobal/periploca-server:latest
+fi

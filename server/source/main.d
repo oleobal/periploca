@@ -81,7 +81,10 @@ void main()
 	router.get("/", &index);
 
 	auto settings = new HTTPServerSettings;
-	settings.port = 8080;
+	settings.port = 80;
+	
+	readOption("port", &settings.port, "Port to listen on");
+	
 	listenHTTP(settings, router);
 	runApplication();
 }
