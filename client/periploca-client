@@ -44,7 +44,11 @@ async def talk_to_peer(reader, writer, my_name="anon"):
 				print("!",e)
 				break
 			message = data[:-1].decode()
-			print(">", message)
+			data = b""
+			if message != "":
+				print(">", message)
+			if reader.at_eof():
+				break
 	async def send_messages():
 		while True:
 			data = await asyncio.get_running_loop().run_in_executor(None, sys.stdin.readline)
@@ -68,8 +72,11 @@ def listen(port: int, my_name: str) -> None:
 	
 def connect(address: Tuple[str, int], my_name: str) -> None:
 	async def open_connection(address):
-		reader, writer = await asyncio.open_connection(address[0], address[1])
-		await talk_to_peer(reader, writer, my_name)
+		try:
+			reader, writer = await asyncio.open_connection(address[0], address[1])
+			await talk_to_peer(reader, writer, my_name)
+		except Exception:
+			writer.close()
 	
 	loop = asyncio.get_event_loop()
 	loop.run_until_complete(open_connection(address))
@@ -105,6 +112,8 @@ def main()-> Optional[int]:
 	if args.verb == "connect" and (args.target_peer is None):
 		print("Specify target peer when in connect mode")
 		return 1
+	if args.name == default_peer_id and args.peer_id != default_peer_id:
+		args.name = args.peer_id
 	
 	
 	print(f"Server: {args.server}, your id: {args.peer_id}, your address: {args.local_address}:{args.local_port}")
