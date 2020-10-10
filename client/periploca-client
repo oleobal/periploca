@@ -78,7 +78,7 @@ def connect(address: Tuple[str, int], my_name: str) -> None:
 
 def main()-> Optional[int]:
 	from uuid import getnode
-	default_server="localhost:8080"
+	default_server="periploca.leobal.eu"
 	default_peer_id=hex(getnode())[2:] # MAC address
 	default_local_address=socket.gethostbyname(socket.gethostname()) # sometimes correct
 	default_local_port=59346 # random
