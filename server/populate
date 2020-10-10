@@ -8,7 +8,7 @@ set -e
 
 curl -X POST "$1/register" \
 	--data "peerid=olivier" \
-	--data "address=localhost:1723" \
+	--data "address=localhost" \
 	--data "port=60022"
 curl -X POST "$1/register" \
 	--data "peerid=Stéphane" \
