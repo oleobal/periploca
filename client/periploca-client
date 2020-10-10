@@ -38,7 +38,8 @@ async def talk_to_peer(reader, writer, my_name="anon"):
 	async def receive_messages():
 		while True:
 			try:
-				data = await reader.readuntil(separator=b'\n') # I used 0x03 (ETX) at first but it's inconvenient
+				data = await reader.readline()
+				# I used 0x03 (ETX) as separator at first but it's inconvenient
 			except Exception as e:
 				print("!",e)
 				break
@@ -46,16 +47,15 @@ async def talk_to_peer(reader, writer, my_name="anon"):
 			print(">", message)
 	async def send_messages():
 		while True:
-			data = await asyncio.get_event_loop().run_in_executor(None, sys.stdin.readline)
+			data = await asyncio.get_running_loop().run_in_executor(None, sys.stdin.readline)
 			if not writer.is_closing():
 				writer.write(data.encode())
 	
-	send_task = asyncio.create_task(send_messages())
-	receive_task = asyncio.create_task(receive_messages())
+	await asyncio.gather(send_messages(), receive_messages())
 
 def listen(port: int, my_name: str) -> None:
 	loop = asyncio.get_event_loop()
-	server = loop.run_until_complete(asyncio.start_server(lambda x,y: talk_to_peer(x,y, my_name), port=port, loop=loop))
+	server = loop.run_until_complete(asyncio.start_server(lambda r,w: talk_to_peer(r,w, my_name), port=port, loop=loop))
 	
 	print("Listening for connections..")
 	try:
@@ -64,17 +64,15 @@ def listen(port: int, my_name: str) -> None:
 		print(" Closing..")
 	server.close()
 	loop.run_until_complete(server.wait_closed())
-	loop.close()
 
 	
 def connect(address: Tuple[str, int], my_name: str) -> None:
 	async def open_connection(address):
-		reader, writer = await asyncio.open_connection(address[0], address[1], loop=loop)
-		loop.run_until_complete(talk_to_peer(reader, writer, my_name))
+		reader, writer = await asyncio.open_connection(address[0], address[1])
+		await talk_to_peer(reader, writer, my_name)
 	
 	loop = asyncio.get_event_loop()
 	loop.run_until_complete(open_connection(address))
-	loop.close()
 
 
 
