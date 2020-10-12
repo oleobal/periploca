@@ -61,6 +61,10 @@ void listPeers(HTTPServerRequest req, HTTPServerResponse res)
 void index(HTTPServerRequest req, HTTPServerResponse res)
 {
 	res.writeBody(
+		/+ 
+		 + the use of __TIMESTAMP__ precludes reproducible builds, but the alternative
+		 + is version numbers and that would be silly on a 100-line project
+		 +/
 		"Periploca-server built "~__TIMESTAMP__~"\n\n"~
 		`
 		Paths:
