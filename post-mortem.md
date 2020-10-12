@@ -10,8 +10,8 @@ peers (as was suggested in the problem statement).
 From that, the architecture was quite clear so I didn't spend any time on design
 beyond a diagram.
 
-Since this is just an exercise I kept to basic features and included very little
-validation.
+Since this is a time-bounded exercise, I kept to basic features and included
+very little validation.
 
 ## Server
 
