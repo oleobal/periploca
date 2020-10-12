@@ -2,6 +2,10 @@
 
 A basic P2P chat with centralized peer discovery.
 
+A central server is used for peer discovery. Clients only use it as a phonebook
+so they can find out peers' addresses before directly contacting them.
+
+
 [Some after-the fact considerations here](./post-mortem.md)
 
 ## Server
